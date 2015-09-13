@@ -1,5 +1,7 @@
 package spring.battle.xml;
 
+import com.hazelcast.config.Config;
+import com.hazelcast.core.Hazelcast;
 import org.springframework.beans.factory.FactoryBean;
 
 import static spring.battle.xml.Cluster.Builder.PoolingOptions.Options.LOCAL;
@@ -14,12 +16,14 @@ public class ClusterFactoryBean implements FactoryBean<Cluster> {
     private String contactPoint;
     private int connectionsPerHost;
     private long reconnectionPolicy;
+    private Config hazelcastConfig;
 
     @Override
     public Cluster getObject() throws Exception {
         return Cluster.builder().addContactPoint(contactPoint)
                 .poolingOptions().setCoreConnectionsPerHost(LOCAL, connectionsPerHost).withRetryPolicy(INSTANCE)
                 .withReconnectionPolicy(new Cluster.Builder.ConstantReconnectionPolicy(reconnectionPolicy))
+                .withHazelcastInstance(Hazelcast.newHazelcastInstance(hazelcastConfig))
                 .build();
     }
 
@@ -43,5 +47,9 @@ public class ClusterFactoryBean implements FactoryBean<Cluster> {
 
     public void setReconnectionPolicy(long reconnectionPolicy) {
         this.reconnectionPolicy = reconnectionPolicy;
+    }
+
+    public void setHazelcastConfig(Config hazelcastConfig) {
+        this.hazelcastConfig = hazelcastConfig;
     }
 }

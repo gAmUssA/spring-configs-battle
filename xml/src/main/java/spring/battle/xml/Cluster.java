@@ -1,20 +1,28 @@
 package spring.battle.xml;
 
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.IMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
 /**
- * @author jbaruch
- * @since 10/8/14
+ * Created by Jeka on 13/10/2014.
  */
 public class Cluster {
 
     private static Logger LOG = LoggerFactory.getLogger(Cluster.class);
+    private final IMap<String, String> storage;
+
+    public Cluster(IMap storage) {
+        this.storage = storage;
+    }
 
     public String save(Map<String, String> map) {
         LOG.info("saving " + map);
+
+        map.forEach(storage::put);
 
         return "Saved " + (map.size() - 1) + " entries, which were parsed by " + map.get(Parser.PARSER_NAME_KEY);
     }
@@ -26,9 +34,9 @@ public class Cluster {
     }
 
     public static class Builder {
+        private IMap storage;
 
         public Builder addContactPoint(String contactPoint) {
-            LOG.info("Contact point set to " + contactPoint);
             return this;
         }
 
@@ -40,8 +48,13 @@ public class Cluster {
             return this;
         }
 
+        public Builder withHazelcastInstance(HazelcastInstance hazelcastInstance) {
+            this.storage = hazelcastInstance.getMap("storage");
+            return this;
+        }
+
         public Cluster build() {
-            return new Cluster();
+            return new Cluster(storage);
         }
 
         public Builder.PoolingOptions poolingOptions() {
@@ -59,14 +72,13 @@ public class Cluster {
             public static enum Options {LOCAL}
 
             public Builder setCoreConnectionsPerHost(Options option, int value) {
-                LOG.info("ConnectionsPerHost set to " + value);
                 return builder;
             }
         }
 
+
         public static class ConstantReconnectionPolicy {
             public ConstantReconnectionPolicy(long timeout) {
-                LOG.info("RecconectionPolicy set to " + timeout);
             }
         }
     }
